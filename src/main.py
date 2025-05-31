@@ -188,7 +188,9 @@ def main():
             ###################               
             elif device["model"] == "shellypro1pm":
                 device_class = ShellyPro1Pm(device["ip"], device["name"])
-                all_points.append(device_class.get_point())
+                point = device_class.get_point()
+                if point:
+                    all_points.append(point)
                 
         # Upload all points to InfluxDB
         if all_points:

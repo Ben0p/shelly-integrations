@@ -3,6 +3,12 @@ import json
 
 
 
+'''
+Shelly Pro 1 PM device class
+'''
+
+
+
 class ShellyPro1Pm:
     def __init__(self, ip: str, name: str):
         self.ip_address = ip
@@ -11,11 +17,12 @@ class ShellyPro1Pm:
 
 
     def get_point(self):
-        self.get_all()
+        if not self.get_all():
+            return None
         self.create_point()
         return self.point
-        
-        
+
+
     def get_all(self):
         try:
             self.info = self.get_info()
@@ -23,18 +30,19 @@ class ShellyPro1Pm:
             self.wifi = self.get_wifi()
             self.inputs = self.get_inputs()
             self.switch = self.get_switch()
+            self.switch_settings = self.get_switch_settings()
             self.all = {
-                'info' : self.info,
-                'system' : self.system,
-                'wifi' : self.wifi,
-                'inputs' : self.inputs,
-                'switch' : self.switch
+                'info': self.info,
+                'system': self.system,
+                'wifi': self.wifi,
+                'inputs': self.inputs,
+                'switch': self.switch,
+                'switch_settings': self.switch_settings
             }
-            
-        except requests.exceptions.RequestException as e:
+            return True
+        except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
             print(f"Error fetching Shelly Pro 1 PM data: {e}")
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
+            return False
 
 
     def get_info(self):
@@ -161,6 +169,8 @@ class ShellyPro1Pm:
         response = requests.get(f"http://{self.ip_address}/rpc/Switch.GetStatus?id=0")
         response.raise_for_status()
         data = response.json()
+        
+        # Timers
         if "timer_started_at" and "timer_duration" in data:
             data["timer_running"] = self.system["system_unixtime"] - data["timer_started_at"]
             data["timer_remaining"] = data["timer_duration"] - data["timer_running"]
@@ -170,6 +180,16 @@ class ShellyPro1Pm:
             data["timer_remaining"] = 0
             data["timer_running"] = 0
             
+        # Errors
+        
+        
+        errors = ["overvoltage", "undervoltage", "overpower", "overcurrent"]
+        for error in errors:
+            data[error] = False
+            if "errors" in data:
+                if error in data["errors"]:
+                    data[error] = True
+                                
         return {
             "switch_0_source" : data["source"],
             "switch_0_output" : data["output"],
@@ -193,10 +213,46 @@ class ShellyPro1Pm:
             "switch_0_timer_started_at" :  int(data["timer_started_at"]),
             "switch_0_timer_duration" :  int(data["timer_duration"]),
             "switch_0_timer_remaining" :  int(data["timer_remaining"]),
-            "switch_0_timer_running" : int(data["timer_running"])
+            "switch_0_timer_running" : int(data["timer_running"]),
+            "switch_0_overvoltage" : data["overvoltage"],
+            "switch_0_undervoltage" : data["overvoltage"],
+            "switch_0_overvoltage" : data["overvoltage"],
+            "switch_0_overvoltage" : data["overvoltage"]
         }
-            
-            
+        
+        
+    def get_switch_settings(self):
+        '''
+        Fetches the switch settings from the /rpc/Switch.GetConfig endpoint.
+        
+        Args:
+           None
+
+        Returns:
+            dict: The JSON response data
+        '''
+        response = requests.get(f"http://{self.ip_address}/rpc/Switch.GetConfig?id=0")
+        response.raise_for_status()
+        data = response.json()      
+        return {
+            "switch_0_name": data["name"],
+            "switch_0_in_mode": data["in_mode"],
+            "switch_0_in_locked": data["in_locked"],
+            "switch_0_initial_state": data["initial_state"],
+            "switch_0_auto_on": data["auto_on"],
+            "switch_0_auto_on_delay": data["auto_on_delay"],
+            "switch_0_auto_off": data["auto_off"],
+            "switch_0_auto_off_delay":data["auto_off_delay"],
+            "switch_0_power_limit": data["power_limit"],
+            "switch_0_voltage_limit": data["voltage_limit"],
+            "switch_0_undervoltage_limit": data["undervoltage_limit"],
+            "switch_0_autorecover_voltage_errors": data["autorecover_voltage_errors"],
+            "switch_0_current_limit": data["current_limit"],
+            "switch_0_reverse": data["reverse"],
+            "switch_0_input_id": data["input_id"]
+        }
+        
+        
     def create_point(self):
         '''
         Constructs a dictionary in the InfluxDB Flux point structure\n
@@ -217,6 +273,7 @@ class ShellyPro1Pm:
                 **self.system,
                 **self.wifi,
                 **self.inputs,
-                **self.switch
+                **self.switch,
+                **self.switch_settings
             }
         }
