@@ -161,6 +161,15 @@ class ShellyPro1Pm:
         response = requests.get(f"http://{self.ip_address}/rpc/Switch.GetStatus?id=0")
         response.raise_for_status()
         data = response.json()
+        if "timer_started_at" and "timer_duration" in data:
+            data["timer_running"] = self.system["system_unixtime"] - data["timer_started_at"]
+            data["timer_remaining"] = data["timer_duration"] - data["timer_running"]
+        else:
+            data["timer_started_at"] = 0
+            data["timer_duration"] = 0
+            data["timer_remaining"] = 0
+            data["timer_running"] = 0
+            
         return {
             "switch_0_source" : data["source"],
             "switch_0_output" : data["output"],
@@ -180,7 +189,11 @@ class ShellyPro1Pm:
             "switch_0_ret_aenergy_by_minute_2" : data["ret_aenergy"]["by_minute"][2],
             "switch_0_ret_aenergy_minute_ts" : data["ret_aenergy"]["minute_ts"],
             "switch_0_temperature_tC" : data["temperature"]["tC"],
-            "switch_0_temperature_tF" : data["temperature"]["tF"]
+            "switch_0_temperature_tF" : data["temperature"]["tF"],
+            "switch_0_timer_started_at" :  int(data["timer_started_at"]),
+            "switch_0_timer_duration" :  int(data["timer_duration"]),
+            "switch_0_timer_remaining" :  int(data["timer_remaining"]),
+            "switch_0_timer_running" : int(data["timer_running"])
         }
             
             
