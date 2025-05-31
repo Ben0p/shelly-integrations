@@ -5,7 +5,12 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from dotenv import load_dotenv
 import os
 import time
+# Device classes
 from devices.shelly3em import Shelly3EM
+from devices.shellypro1pm import ShellyPro1Pm
+
+
+
 
 def get_devices(file_path):
     """
@@ -27,6 +32,7 @@ def get_devices(file_path):
         print(f"Error decoding JSON: {e}")
         return []
 
+
 def get_shelly_info(base_url):
     '''
     Fetches the basic information from the /shelly endpoint.
@@ -44,6 +50,7 @@ def get_shelly_info(base_url):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching Shelly info: {e}")
         return None
+
 
 def get_meter_status(base_url):
     """
@@ -63,6 +70,7 @@ def get_meter_status(base_url):
         print(f"Error fetching meter status: {e}")
         return None
 
+
 def get_influx_settings():
     """
     Loads InfluxDB connection settings from a .env file.
@@ -77,6 +85,7 @@ def get_influx_settings():
         "org": os.getenv("INFLUXDB_ORG"),
         "bucket": os.getenv("INFLUXDB_BUCKET")
     }
+
 
 def format_data_to_influx(info, data, model):
     """
@@ -120,7 +129,7 @@ def upload_to_influx(influx_settings, points):
         points (list): The points data to upload.
     """
     try:
-        with InfluxDBClient(url=influx_settings["url"], token=influx_settings["token"], org=influx_settings["org"]) as client:
+        with InfluxDBClient(url=influx_settings["url"], token=influx_settings["token"], org=influx_settings["org"], verify_ssl=False) as client:
             write_api = client.write_api(write_options=SYNCHRONOUS)
             write_api.write(bucket=influx_settings["bucket"], record=points)
             print(f"Wrote {len(points)} points to InfluxDB.")
@@ -129,13 +138,13 @@ def upload_to_influx(influx_settings, points):
 
 
 def main():
+    # TODO: Update to proper logging service
+    # TODO: Update environment loading service
     load_dotenv()
-    devices_file = os.getenv("JSON_FILE")
+    devices_file = os.getenv("JSON_FILE", "devices.json")
     if not devices_file:
         print("Error: JSON_FILE environment variable not set.")
         return
-    # Path to the devices.json file
-    devices_file = "devices.json"
 
     print("Fetching devices from devices.json...")
     devices = get_devices(devices_file)
@@ -145,38 +154,42 @@ def main():
         return
 
     influx_settings = get_influx_settings()
-    
-    # Initialize device classes based on model
-    device_classes = []
-    for device in devices:
-        ip = device.get("ip")
-        model = device.get("model")
-        if not ip:
-            print(f"Skipping device with missing IP: {device}")
-            continue
-
-        if model == "shelly3em":
-            device_classes.append(Shelly3EM(ip))
-        # Add more models here as needed
 
     # Initialize InfluxDB client
+    # TODO: Make the influx connection and methods a class
     influx_client = InfluxDBClient(url=influx_settings["url"], token=influx_settings["token"], org=influx_settings["org"])
     write_api = influx_client.write_api(write_options=SYNCHRONOUS)
 
     while True:
         all_points = []
-        for device_class in device_classes:
-            print(f"Processing device at {device_class.ip_address}...")
+        for device in devices:
+            # TODO: Initialize classes of each device once then do the get_point() method periodically
+            
+            ###############
+            # Shelly 3 EM #
+            ###############
+            # TODO: Self contain the shelly 3 em class the same as shelly pro 1 pm
+            if device["model"] == "shelly3em":
+                device_class = Shelly3EM(device["ip"])
 
-            print("Fetching Shelly basic info...")
-            shelly_info = get_shelly_info(f"http://{device_class.ip_address}")
+                print(f"Processing shelly3em at {device_class.ip_address}...")
 
-            print("Fetching meter statuses...")
-            meter_status = device_class.get_status()
-            if meter_status and shelly_info:
-                points = device_class.format_data_to_influx(shelly_info, meter_status)
-                all_points.extend(points)
+                print("Fetching Shelly basic info...")
+                shelly_info = get_shelly_info(f"http://{device_class.ip_address}")
 
+                print("Fetching meter statuses...")
+                meter_status = device_class.get_status()
+                if meter_status and shelly_info:
+                    points = device_class.format_data_to_influx(shelly_info, meter_status)
+                    all_points.extend(points)
+
+            ###################
+            # Shelly Pro 1 PM #
+            ###################               
+            elif device["model"] == "shellypro1pm":
+                device_class = ShellyPro1Pm(device["ip"], device["name"])
+                all_points.append(device_class.get_point())
+                
         # Upload all points to InfluxDB
         if all_points:
             try:
