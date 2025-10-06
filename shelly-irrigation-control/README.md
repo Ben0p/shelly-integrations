@@ -1,0 +1,2 @@
+# Shelly Irrigation Control
+Primarily created to read the zone statuses of a Shelly FK-06X irrigation controller then trigger a Shelly Pro 1 PM to activate an irrigation pump. This is functionality is not built-in with the FK-06X.

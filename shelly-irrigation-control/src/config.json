@@ -1,0 +1,14 @@
+{
+    "irrigation_controllers" : [
+        {
+            "name": "South West",
+            "ip" : "10.0.11.121",
+            "model" : "fk-06x"
+        }
+    ],
+    "pump_relay" : {
+        "name": "Bore",
+        "ip" : "10.0.11.131",
+        "model" : "shellypro1pm"
+    }
+}

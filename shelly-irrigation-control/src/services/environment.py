@@ -1,13 +1,13 @@
 import os
 import argparse
-from services.loggingservice import LOGGER
+from services.logging import LOGGER
 from dotenv import load_dotenv
 
 
 
 
 ''' 
-Module for intializing the environment
+Module for initializing the environment
 docker -> Loads variables from the OS environment (--env docker)
 other -> Loads variables from a .env.x file (--env test)
 For example "main.py --env test" loads ".env.test" file
@@ -19,7 +19,7 @@ str: Normal string that gets stripped
 int: Integer
 float: Float
 list[str]: list of strings only (env variable is csv - var1, var2, var3)
-url: strill a string but strips any trailing /
+url: still a string but strips any trailing /
 pass: A secret (str) that won't log to console
 bool: Boolean, passes the string in to a bool type
 dir: A directory, checks it exists, get's created if it doesn't
@@ -55,15 +55,13 @@ class env:
         # General
         self.LOGGING_LEVEL = None
         self.POLLING_INTERVAL_SECONDS = None
-        # InfluxDB
-        self.INFLUXDB_URL = None
-        self.INFLUXDB_TOKEN = None
-        self.INFLUXDB_BUCKET = None
-        # Starlink
-        self.STARLINK_URL = None
-        self.STARLINK_COOKIE = None
-        self.USE_CACHE = None
-        self.CACHE_DIR = None
+        # File
+        self.DEVICES_CONFIG_DIR = None
+        self.DEVICES_CONFIG_FILE = None
+        # Polling
+        self.TIMEOUT = None
+        self.FAILSAFE = None
+        
 
         ########################
         #  Variable properties #
@@ -80,64 +78,34 @@ class env:
             {
                 "name" : "POLLING_INTERVAL_SECONDS",
                 "required" : False,
-                "default" : "600",
+                "default" : "5",
+                "type" : "int"
+            },
+            # File
+            {
+                "name" : "DEVICES_CONFIG_DIR",
+                "required" : False,
+                "default" : "",
+                "type" : "str"
+            },
+            {
+                "name" : "DEVICES_CONFIG_FILE",
+                "required" : False,
+                "default" : "config.json",
+                "type" : "str"
+            },
+            # Polling
+            {
+                "name" : "TIMEOUT",
+                "required" : False,
+                "default" : "1",
                 "type" : "int"
             },
             {
-                "name" : "NETBIOS",
+                "name" : "FAILSAFE",
                 "required" : False,
-                "default" : "False",
-                "type" : "bool"
-            },
-            # InfluxDB
-            {
-                "name" : "INFLUXDB_URL",
-                "required" : True,
-                "default" : None,
-                "type" : "url"
-            },
-            {
-                "name" : "INFLUXDB_TOKEN",
-                "required" : True,
-                "default" : None,
-                "type" : "pass"
-            },
-            {
-                "name" : "INFLUXDB_BUCKET",
-                "required" : False,
-                "default" : "ot-hive-clients-dnac",
-                "type" : "str"
-            },
-            {
-                "name" : "INFLUXDB_ORG",
-                "required" : False,
-                "default" : "Fortescue",
-                "type" : "str"
-            },
-            # Starlink
-            {
-                "name" : "STARLINK_URL",
-                "required" : False,
-                "default" : "https://www.starlink.com/",
-                "type" : "str"
-            },
-            {
-                "name" : "STARLINK_COOKIE",
-                "required" : True,
-                "default" : "",
-                "type" : "pass"
-            },
-            {
-                "name" : "USE_CACHE",
-                "required" : False,
-                "default" : "False",
-                "type" : "bool"
-            },
-            {
-                "name" : "CACHE_DIR",
-                "required" : False,
-                "default" : "cache",
-                "type" : "dir"
+                "default" : "10",
+                "type" : "int"
             }
         ]
 
