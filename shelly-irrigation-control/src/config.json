@@ -3,12 +3,16 @@
         {
             "name": "South West",
             "ip" : "10.0.11.121",
-            "model" : "fk-06x"
+            "model" : "fk-06x",
+            "interval_seconds" : 5,
+            "failsafe_seconds" : 10
         }
     ],
     "pump_relay" : {
         "name": "Bore",
         "ip" : "10.0.11.131",
-        "model" : "shellypro1pm"
+        "model" : "shellypro1pm",
+        "interval_seconds" : 5,
+        "failsafe_seconds" : 10
     }
 }

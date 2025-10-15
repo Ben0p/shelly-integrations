@@ -2,7 +2,7 @@ from services.environment import  ENV
 import json
 import re
 from pathlib import Path
-from devices.device import Device
+from components.device import Device
 
 
 
