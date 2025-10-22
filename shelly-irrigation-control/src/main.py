@@ -4,10 +4,7 @@ from services import loaddevices
 import os
 from pathlib import Path
 from pprint import pprint
-
-from devices.shellypro1pm import ShellyPro1Pm
-from devices.fk06x import Fk06x
-
+import time
 
 
 def main():
@@ -18,14 +15,25 @@ def main():
     # Load devices
     devices = loaddevices.FromJson()
     irrigation_controllers = devices.irrigation_controllers
-    irrigation_controllers = [Fk06x(irrigation_controller) for irrigation_controller in irrigation_controllers]
     pump = devices.pump
-    pump = ShellyPro1Pm(pump)
     
 
     # pprint(pump.as_dict())
     # print(pump.relay_on_timer())
-    pprint(irrigation_controllers[0].as_dict())
+    # pprint(irrigation_controllers[0].as_dict())
+    while True:
+        pump_on = False
+        for irrigation_controller in irrigation_controllers:
+            for zone in irrigation_controller.boolean_statuses:
+                if zone.value:
+                    pump_relay = pump.relay_on_timer()
+                    if pump_relay.ison:
+                        pump_on = True
+                        break
+            if pump_on:
+                break
+        print(f"Pump is on: {pump_on}")
+        time.sleep(ENV.POLLING_INTERVAL_SECONDS)
     
 
     
