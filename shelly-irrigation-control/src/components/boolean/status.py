@@ -2,7 +2,7 @@ from utils import normalize
 
 
 
-class Status:
+class BooleanStatus:
     def __init__(self, data: dict):
         self._data: dict = data
     

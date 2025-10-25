@@ -1,6 +1,6 @@
 from components.device import Device
 from components.sysGetStatus import SysGetStatus
-from components.boolean.status import Status
+from components.boolean.status import BooleanStatus
 import requests
 import time
 
@@ -20,7 +20,7 @@ class Fk06x:
         self._sys_get_status_polled_time: float = 0.0
         # Boolean.GetStatus
         self._boolean_keys: list[int] = [200, 201, 202, 203, 204, 205]
-        self._boolean_get_status_caches: list[Status] = [None, None, None, None, None, None]
+        self._boolean_get_status_caches: list[BooleanStatus] = [None, None, None, None, None, None]
         self._boolean_get_status_polled_times: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
@@ -33,7 +33,8 @@ class Fk06x:
         return {
             'device' : self.device.as_dict(),
             'sys' : self.sys.as_dict(),
-            'booleans' : [boolean_status.as_dict() for boolean_status in self.boolean_statuses]
+            'booleans' : [boolean_status.as_dict() for boolean_status in self.boolean_statuses],
+            'zone_active' : self.zone_active
         }
         
     
@@ -48,7 +49,7 @@ class Fk06x:
         for idx, key in enumerate(self._boolean_keys):
             if (time.time() - self._boolean_get_status_polled_times[idx]) > self.device.interval_seconds:
                 data = requests.get(f"http://{self.device.ip}/rpc/Boolean.GetStatus?id={key}")
-                self._boolean_get_status_caches[idx] = Status(data.json())
+                self._boolean_get_status_caches[idx] = BooleanStatus(data.json())
                 self._boolean_get_status_polled_times[idx] = time.time()
         
     
@@ -64,6 +65,12 @@ class Fk06x:
     
     
     @property
-    def boolean_statuses(self) -> list[Status]:
+    def boolean_statuses(self) -> list[BooleanStatus]:
         self._bool_get_statuses()
         return self._boolean_get_status_caches
+    
+    
+    @property
+    def zone_active(self) -> bool:
+        zone_states = [boolean.value for boolean in self.boolean_statuses]
+        return any(zone_states)

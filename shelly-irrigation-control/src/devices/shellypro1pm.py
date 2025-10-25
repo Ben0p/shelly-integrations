@@ -1,7 +1,6 @@
 from components.device import Device
 from components.sysGetStatus import SysGetStatus
-from components.switchGetConfig import SwitchGetConfig
-from components.switchGetStatus import SwitchGetStatus
+from components.switch import SwitchGetConfig, SwitchGetStatus
 from components.relay import Relay
 import requests
 import time
@@ -41,7 +40,8 @@ class ShellyPro1Pm:
             'device' : self.device.as_dict(),
             'sys' : self.sys.as_dict(),
             'switch_0_config' : self.switch_0_config.as_dict(),
-            'switch_0_status' : self.switch_0_status.as_dict()
+            'switch_0_status' : self.switch_0_status.as_dict(),
+            'is_active' : self.is_active
         }
         
     
@@ -122,3 +122,8 @@ class ShellyPro1Pm:
     @property
     def relay(self) -> Relay:
         return self._relay_response_cache
+    
+    
+    @property
+    def is_active(self) -> bool:
+        return self.switch_0_status.output

@@ -1,7 +1,7 @@
 from utils import normalize
-from .aenergy import Aenergy
-from .retAenergy import RetAenergy
-from .temperature import Temperature
+from ..aenergy import Aenergy
+from ..retAenergy import RetAenergy
+from ..temperature import Temperature
 
 
 
