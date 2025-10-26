@@ -27,7 +27,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./shelly-irrigation-control
+          file: ./shelly-irrigation-control/Dockerfile
           push: true
           tags: |
             ben0p/shelly-irrigation-control:latest
