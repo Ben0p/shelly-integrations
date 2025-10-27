@@ -23,20 +23,38 @@ def main():
     devices = loaddevices.FromJson()
     irrigation_controllers = devices.irrigation_controllers
     pump = devices.pump
-    pump_state = None
-
+    pump_state: bool = None
+    some_error: bool = False
+    error_state = None
+    
     while True:
         for irrigation_controller in irrigation_controllers:
             if irrigation_controller.zone_active:
                 pump.relay_on_timer()
                 if pump.is_active:
                     break
+            if irrigation_controller.has_error:
+                LOGGER.error(irrigation_controller.last_error_msg)
+                some_error = True
+            else:
+                some_error = False
         if pump_state != pump.is_active:
             if pump.is_active:
-                print(f"The pump is now running...")
+                LOGGER.info(f"The pump is now running...")
             else:
-                print(f"The pump has stopped")
+                LOGGER.info(f"The pump has stopped")
             pump_state = pump.is_active
+        if pump.has_error:
+            LOGGER.error(pump.last_error_msg)
+            some_error = True
+        else:
+            some_error = False
+
+        if error_state != some_error:
+            if some_error:
+                LOGGER.error("There was some error, ignoring and trying again...")
+                
+        error_state = some_error
         time.sleep(ENV.POLLING_INTERVAL_SECONDS)
     
 

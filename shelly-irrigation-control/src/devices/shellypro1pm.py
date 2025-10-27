@@ -28,7 +28,9 @@ class ShellyPro1Pm:
         # Relay
         self._relay_response_cache: Relay = None
         self._relay_response_polled_time: float = 0.0
-
+        # Error
+        self._has_error: bool = False
+        self._last_error_msg: str = None
 
     
     def __string__(self) -> str:
@@ -47,24 +49,36 @@ class ShellyPro1Pm:
     
     def _sys_get_status(self):
         if (time.time() - self._sys_get_status_polled_time) > self.device.interval_seconds:
-            data = requests.get(f"http://{self.device.ip}/rpc/Sys.GetStatus")
-            self._sys_get_status_cache = SysGetStatus(data.json())
-            self._sys_get_status_polled_time = time.time()
-            
+            try:
+                data = requests.get(f"http://{self.device.ip}/rpc/Sys.GetStatus")
+                self._sys_get_status_cache = SysGetStatus(data.json())
+                self._sys_get_status_polled_time = time.time()
+            except Exception as e:
+                self._last_error_msg = e
+                self._has_error = True         
+
 
     def _switch_get_config(self, id: int):
         if (time.time() - self._switch_get_config_polled_time) > self.device.interval_seconds:
-            data = requests.get(f"http://{self.device.ip}/rpc/Switch.GetConfig?id={id}")
-            self._switch_get_config_cache = SwitchGetConfig(data.json())
-            self._switch_get_config_polled_time = time.time()
-
+            try:
+                data = requests.get(f"http://{self.device.ip}/rpc/Switch.GetConfig?id={id}")
+                self._switch_get_config_cache = SwitchGetConfig(data.json())
+                self._switch_get_config_polled_time = time.time()
+            except Exception as e:
+                self._last_error_msg = e
+                self._has_error = True
+                
 
     def _switch_get_status(self, id: int):
         if (time.time() - self._switch_get_status_polled_time) > self.device.interval_seconds:
-            data = requests.get(f"http://{self.device.ip}/rpc/Switch.GetStatus?id={id}")
-            self._switch_get_status_cache = SwitchGetStatus(data.json())
-            self._switch_get_status_polled_time = time.time()
-
+            try:
+                data = requests.get(f"http://{self.device.ip}/rpc/Switch.GetStatus?id={id}")
+                self._switch_get_status_cache = SwitchGetStatus(data.json())
+                self._switch_get_status_polled_time = time.time()
+            except Exception as e:
+                self._last_error_msg = e
+                self._has_error = True
+                
     
     def relay_on_timer(self) -> Relay:
         '''
@@ -84,10 +98,15 @@ class ShellyPro1Pm:
             HttpError: If there is a request http error
         '''
         if (time.time() - self._relay_response_polled_time) > self.device.interval_seconds:
-            response = requests.get(f"http://{self.device.ip}/relay/0?turn=on&timer={self.device.failsafe_seconds}")
-            response.raise_for_status()
-            self._relay_response_cache = Relay(response.json())
-            self._relay_response_polled_time = time.time()
+            try:
+                response = requests.get(f"http://{self.device.ip}/relay/0?turn=on&timer={self.device.failsafe_seconds}")
+                response.raise_for_status()
+                self._relay_response_cache = Relay(response.json())
+                self._relay_response_polled_time = time.time()
+                self._has_error = False
+            except Exception as e:
+                self._last_error_msg = e
+                self._has_error = True
         return self._relay_response_cache
             
 
@@ -127,3 +146,13 @@ class ShellyPro1Pm:
     @property
     def is_active(self) -> bool:
         return self.switch_0_status.output
+
+
+    @property
+    def has_error(self) -> bool:
+        return self._has_error
+    
+    
+    @property
+    def last_error_msg(self) -> str:
+        return self._last_error_msg

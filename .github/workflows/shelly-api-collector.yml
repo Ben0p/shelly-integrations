@@ -1,4 +1,4 @@
-name: Build and Push shelly-api-collector Docker Image
+name: Build and push shelly-api-collector image
 
 on:
   push:

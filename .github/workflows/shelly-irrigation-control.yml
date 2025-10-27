@@ -1,4 +1,4 @@
-name: Build and Push shelly-irrigation-control Docker Image
+name: Build and push shelly-irrigation-control image
 
 on:
   push:

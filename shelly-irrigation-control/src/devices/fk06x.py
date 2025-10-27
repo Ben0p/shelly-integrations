@@ -22,6 +22,9 @@ class Fk06x:
         self._boolean_keys: list[int] = [200, 201, 202, 203, 204, 205]
         self._boolean_get_status_caches: list[BooleanStatus] = [None, None, None, None, None, None]
         self._boolean_get_status_polled_times: list[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # Error
+        self._has_error: bool = False
+        self._last_error_msg: str = None
 
 
     
@@ -34,7 +37,9 @@ class Fk06x:
             'device' : self.device.as_dict(),
             'sys' : self.sys.as_dict(),
             'booleans' : [boolean_status.as_dict() for boolean_status in self.boolean_statuses],
-            'zone_active' : self.zone_active
+            'zone_active' : self.zone_active,
+            'is_error' : self.is_error,
+            'last_error_msg' : self.last_error_msg
         }
         
     
@@ -48,9 +53,14 @@ class Fk06x:
     def _bool_get_statuses(self):
         for idx, key in enumerate(self._boolean_keys):
             if (time.time() - self._boolean_get_status_polled_times[idx]) > self.device.interval_seconds:
-                data = requests.get(f"http://{self.device.ip}/rpc/Boolean.GetStatus?id={key}")
-                self._boolean_get_status_caches[idx] = BooleanStatus(data.json())
-                self._boolean_get_status_polled_times[idx] = time.time()
+                try:
+                    data = requests.get(f"http://{self.device.ip}/rpc/Boolean.GetStatus?id={key}")
+                    self._boolean_get_status_caches[idx] = BooleanStatus(data.json())
+                    self._boolean_get_status_polled_times[idx] = time.time()
+                    self._has_error = False
+                except Exception as e:
+                    self._last_error_msg = e
+                    self._has_error = True
         
     
     @property
@@ -74,3 +84,13 @@ class Fk06x:
     def zone_active(self) -> bool:
         zone_states = [boolean.value for boolean in self.boolean_statuses]
         return any(zone_states)
+    
+    
+    @property
+    def has_error(self) -> bool:
+        return self._has_error
+    
+    
+    @property
+    def last_error_msg(self) -> str:
+        return self._last_error_msg
